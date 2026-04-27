@@ -1,0 +1,302 @@
+ADD,SUB,MUL,DIV-
+
+ORG 0000H
+; ADDITION
+MOV A, #25H        ; First number
+MOV B, #15H        ; Second number
+ADD A, B           ; A = 25H + 15H = 3AH
+MOV R0, A          ; Store addition result in R0
+
+; SUBTRACTION
+MOV A, #35H        ; Minuend
+MOV R1, #15H       ; Subtrahend
+CLR C              ; Clear carry before SUBB
+SUBB A, R1         ; A = 35H - 15H = 20H
+MOV R2, A          ; Store subtraction result in R2
+
+; MULTIPLICATION
+MOV A, #05H
+MOV B, #04H
+MUL AB             ; A = 14H (lower byte), B = 00H
+MOV R3, A          ; Store multiplication result in R3
+
+; DIVISION
+MOV A, #20H        ; Dividend
+MOV B, #04H        ; Divisor
+DIV AB             ; A = Quotient (08H), B = Remainder (00H)
+MOV R4, A          ; Store quotient in R4
+MOV R5, B          ; Store remainder in R5
+
+HERE:
+SJMP HERE          ; Stop execution
+
+END
+
+
+
+Program to transfer a block of data from one memory location to another
+ORG 0000H
+LJMP MAIN
+
+ORG 0030H
+SOURCE_DATA:
+
+DB 11H, 22H, 33H, 44H, 55H
+
+ORG 0040H
+MAIN:
+
+MOV R2, #05H
+MOV R1, #50H
+
+MOV DPTR, #SOURCE_DATA
+
+LOOP:
+CLR A
+MOVC A, @A+DPTR
+MOV @R1, A
+INC DPTR
+INC R1
+DJNZ R2, LOOP
+SJMP $
+END
+
+
+
+Different operations including shifts
+ORG 0000H
+
+; 1) Store test numbers in registers
+MOV A,  #0F0H        ; Test number 1 in Accumulator
+MOV R0, #20H         ; Test number 2
+MOV R1, #05H         ; Test number 3
+MOV R2, #03H         ; Test number 4
+
+; 2) Basic addition with carry check
+MOV A,  #0F0H
+MOV R3, #20H
+ADD A, R3            ; A = F0 + 20 => carry occurs
+
+JNC ADD_NO_CARRY
+MOV 30H, #01H        ; Store 1 in RAM (30H) if carry occurred
+SJMP ADD_DONE
+ADD_NO_CARRY:
+MOV 30H, #00H        ; Store 0 if no carry
+ADD_DONE:
+MOV 31H, A           ; Store addition result in RAM (31H)
+
+; 3) Subtraction with borrow check
+MOV A,  #10H
+MOV R4, #20H
+CLR C                ; Important before SUBB
+SUBB A, R4           ; A = 10 - 20 => borrow occurs
+
+JNC SUB_NO_BORROW
+MOV 32H, #01H        ; Borrow occurred
+SJMP SUB_DONE
+SUB_NO_BORROW:
+MOV 32H, #00H
+SUB_DONE:
+MOV 33H, A           ; Store subtraction result
+
+; 4) Simple multiplication
+MOV A, #12H
+MOV B, #04H
+MUL AB               ; Result: A = low byte, B = high byte
+MOV 34H, A           ; Store low byte
+MOV 35H, B           ; Store high byte
+
+; 5) Division with remainder
+MOV A, #32H          ; Dividend = 50
+MOV B, #06H          ; Divisor = 6
+DIV AB               ; A=Quotient, B=Remainder
+MOV 36H, A           ; Store quotient
+MOV 37H, B           ; Store remainder
+
+; 6) Basic logic operations
+; 6.a OR operation
+MOV A,  #55H
+MOV R5, #0FH
+ORL A, R5
+MOV 38H, A
+
+; 6.b XOR operation
+MOV A,  #55H
+MOV R6, #0FH
+XRL A, R6
+MOV 39H, A
+
+; 6.c NOT operation
+MOV A, #55H
+CPL A
+MOV 3AH, A
+
+; 6.d AND operation
+MOV A,  #55H
+MOV R7, #0FH
+ANL A, R7
+MOV 3BH, A
+
+; 7) Shift and rotate operations
+; 7.a Left shift (using RL = rotate left, similar to shift)
+MOV A, #08H
+RL A
+MOV 3CH, A
+
+; 7.b Right shift (using RR = rotate right, similar to shift)
+MOV A, #08H
+RR A
+MOV 3DH, A
+
+; 7.c Rotate left through carry
+MOV A, #81H
+CLR C
+RLC A
+MOV 3EH, A
+
+; 7.d Rotate right through carry
+MOV A, #81H
+CLR C
+RRC A
+MOV 3FH, A
+
+; 8) Increment and decrement
+MOV A, #09H
+INC A
+MOV 40H, A
+
+MOV A, #09H
+DEC A
+MOV 41H, A
+
+; End (infinite loop)
+HERE: SJMP HERE
+
+END
+
+
+LAB 5 - 
+
+; Toggles LED on P1.0 with timer-based delay
+
+ORG 0000H
+LJMP MAIN
+
+ORG 0030H
+MAIN:
+    MOV P1, #00H       ; Initialize P1 (all pins low)
+    
+LOOP:
+    CPL P1.0           ; Toggle P1.0 (LED connected to this pin)
+    ACALL DELAY        ; Call delay subroutine
+    SJMP LOOP          ; Loop forever
+
+; Timer-based delay subroutine
+DELAY:
+    MOV TMOD, #01H     ; Set Timer 0 in Mode 1 (16-bit timer)
+    MOV TH0, #3CH      ; Load high byte for ~50ms delay
+    MOV TL0, #0B0H     ; Load low byte (3CB0H = 15536)
+    SETB TR0           ; Start Timer 0
+    
+WAIT:
+    JNB TF0, WAIT      ; Wait until timer overflow
+    CLR TR0            ; Stop Timer 0
+    CLR TF0            ; Clear overflow flag
+    
+    
+    RET                ; Return from subroutine
+
+END
+
+
+
+LED pattern - 
+ORG 0000H
+
+START:
+;---------------- ALL ON ----------------
+MOV P1,#0FFH
+ACALL DELAY
+
+;---------------- ALL OFF ----------------
+MOV P1,#00H
+ACALL DELAY
+
+;---------------- ALTERNATE ----------------
+MOV P1,#55H
+ACALL DELAY
+MOV P1,#0AAH
+ACALL DELAY
+
+;================ PATTERN 1 =================
+; RUNNING LED LEFT
+PATTERN_LEFT:
+MOV A,#01H
+LEFT_LOOP:
+MOV P1,A
+ACALL DELAY
+RL A
+CJNE A,#00H,LEFT_LOOP
+
+;================ PATTERN 2 =================
+; RUNNING LED RIGHT
+PATTERN_RIGHT:
+MOV A,#80H
+RIGHT_LOOP:
+MOV P1,A
+ACALL DELAY
+RR A
+CJNE A,#00H,RIGHT_LOOP
+
+;================ PATTERN 3 =================
+; CONVERGING (OUTSIDE → CENTER)
+MOV R0,#04H
+MOV A,#81H        ; 10000001
+CONVERGE:
+MOV P1,A
+ACALL DELAY
+RL A
+RR A
+DJNZ R0,CONVERGE
+
+;================ PATTERN 4 =================
+; DIVERGING (CENTER → OUTSIDE)
+MOV R0,#04H
+MOV A,#18H        ; 00011000
+DIVERGE:
+MOV P1,A
+ACALL DELAY
+RR A
+RL A
+DJNZ R0,DIVERGE
+
+;================ PATTERN 5 =================
+; BINARY COUNT UP
+MOV A,#00H
+COUNT_UP:
+MOV P1,A
+ACALL DELAY
+INC A
+JNZ COUNT_UP
+
+;================ PATTERN 6 =================
+; BINARY COUNT DOWN
+MOV A,#0FFH
+COUNT_DOWN:
+MOV P1,A
+ACALL DELAY
+DEC A
+CJNE A,#00H,COUNT_DOWN
+
+SJMP START        ; REPEAT ALL PATTERNS
+
+;================ DELAY =================
+DELAY:
+MOV R6,#200
+D1: MOV R7,#200
+D2: DJNZ R7,D2
+    DJNZ R6,D1
+RET
+
+END
+
